@@ -1,0 +1,26 @@
+If you want to contribute, plese let this be the skeleton of your mind:
+
+--8<----------------
+#undef USING_CXX
+#undef USING_FANCY_LIBS
+#include <plain_c.h>
+#include <linux_kernel_coding_style.h>
+#include <proper_commentary.h>
+#include <skill.h> /* FIXME: But not more than ours! ;-) */
+#undef WINDOWS
+#undef MAC_OSX
+#undef FOOBSD /* Write us if you intend to port */
+#include <linux.h>
+--8<----------------
+
+and for source files, take the templates from the .vim/ directory under the
+source tree. [ Beware that the repository has its own .vimrc file if you use
+vim! We're also interested in scripts for other (decent!) editors. ]
+
+Open your mailbox to us for discussion.
+
+Don't be eccentric, I'm already.
+
+Use Git, NOT GitHub.
+
+Thanks.

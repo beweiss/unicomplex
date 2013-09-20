@@ -1,0 +1,305 @@
+The Unicomplex Protocol
+-----------------------
+
+1 Introduction
+--------------
+
+Before we  come to dry,  technical diagrams,  this first section  shall show
+briefly what the  point of the Unicomplex  Protocol (hereinafter abbreviated
+as UP) is.
+
+There are three  parties involved in the network  communication taking place
+under the keyword `unicomplex':
+
+ - master, slaves and clients.
+
+The `master' functions  as the outward appearance of  a computer collective.
+It transparently connects the both other parties: slaves and clients.
+
+For slaves, it works  like a hub: it is the central  point where all results
+are regularly reported to.
+
+For clients,  it represents a computer  collective (the set of  a master and
+associated slaves  which carry out  computations): the master  is externally
+known and fixed. It is addressed by  clients who want to enter a computation
+job and query its results.
+
+`Slaves' live behind  the master. It is  inherent to the UP  that slaves are
+not fixed, i.e. running slaves can go offline and new slaves can come up and
+register to take  over jobs. And this  is their principal duty:  to take job
+definitions from the master and then  calculate. They will report results in
+regular time intervals  (or immediately when they are known)  to the master.
+Only the  master is  `trusted' in  their eyes. They  will not  interpret any
+traffic from other hosts.
+
+Finally `clients' are the most elastic term. They are programs which use the
+UP to communicate job definitions to the master and receive results.
+
+There is a  further non-technical distinction between  `voluntary' and `non-
+voluntary'  clients. A  voluntary client  reports  its results  back to  the
+master as if it had worked as  a slave. A non-voluntary client only consumes
+data from the collective.
+
+2 Important terms and abbreviations
+-----------------------------------
+
+Terms used in the explanation of other terms in this list are suffixed by an
+asterisk.
+
+ - `UP' :  the Unicomplex Protocol whose  definition this is -  `Master' : a
+ central, public server  (host or program) implementing the UP*  - `Slave' :
+ an auxiliary computer  (or program) connected to a  master* - `Collective':
+ the  set of  a  master* and  its  associated  slaves* -  `Job'  : a  formal
+ definition of some task for the collective* to compute. It is formulated in
+ the P  language. - `Client' :  a host (or  program) which sends jobs*  to a
+ collective's* master*
+
+3 The UP in detail
+------------------
+
+The UP  is based on TCP/IP  to guarantee that communication  goes by without
+losing any packet accidentally. Moreover, from the semantics outlined in the
+first section, it makes sense to  establish a connection between hosts. As a
+final justification,  the IP is  used to potentially connect  computers from
+all over the world.
+
+A UP packet is made of the following fields (always in network byte order):
+
+[ Magic Number 0x55432d50 = "UC-P" |   4 B ]
+[ Type T                           |   4 B ]
+[ Sender ID                        |   4 B ]
+[ Signature                        | 256 B ]
+[ Length L                         |   4 B ]
+[ Reserved                         |   4 B ]
+[ Body B                           |   L B ]
+--------------------------------------------
+                                 276 + L B
+
+The Magic Number 0x55432d50 is constant and required so that a UP-conforming
+program recognises the packet.
+
+The Reserved field must be initialised to zeroes for future compatibility.
+
+3.1 Signature verification
+--------------------------
+
+Each  packet arriving  at any  party must  be examined  with respect  to the
+Sender ID and Signature fields. They verify the sender's identity.
+
+3.1.1 Signing a packet
+----------------------
+
+To sign  a packet, it must  first be constructed completely,  except for the
+Signature field. The Sender ID is  a unique number which identifies a person
+to the receiver. A natural method to  organise Sender IDs is outlined in the
+next section.
+
+When the  packet is constructed, the  Signature field is initialised  to all
+zeroes  and the  SHA-1 message  digest of  the packet  is taken.  This hash,
+signed with  the RSA 2048  bits private key of  the sender is  the Signature
+field.
+
+3.1.2 Verifying a packet
+------------------------
+
+We first  observe that the  master has the  most difficult job  in verifying
+their correspondents'  identities. Slaves  only communicate with  the public
+master, just  as clients  do. It  is necessary  that the  public key  of the
+master is known to the clients and slaves.
+
+The master now has to keep a database of `trusted' hosts. In there, a unique
+Sender ID is associated with this person's public RSA key. In packets coming
+from the master, the Sender ID field will contain 0 and this value is not to
+be assigned to any other host by the database.
+
+When a packet  arrives, the public key corresponding to  the given Sender ID
+is searched in the database. If it is not found, the packet is rejected with
+an error type packet (see next section).
+
+If  the public  key  is found,  the  packet is  validated  according to  the
+signing procedure  (described in  the previous  section). Should  the packet
+verification fail, the master responds with an error message. Otherwise, the
+packet is authentic and processed further.
+
+3.2 The Type field
+------------------
+
+There  remain only  the  Type,  Length and  Body  fields  which are  closely
+related. The set of valid possibilities are subject of this section.
+
+The illustration is presented in form of three finite automata, one for each
+of master,  slave and client. Note  that unused bytes in  valid requests are
+really filled with spaces (ASCII 0x20).
+
+3.2.1 Finite automate master
+----------------------------
+
+There  is  only  one  state  of the  master  interesting  to  this  protocol
+definition: `serving' (the other would be  `offline' and does not need to be
+specified in a protocol). However, the amount of possible inputs and outputs
+is great.
+
+The following is a table which
+
+"PJOB" -  Request in  the P  language. The ASCII  string containing  the job
+definition is found in B. Its length is L.
+
+        This message  type may be sent  from master to a  slave dictating to
+        work on this job.
+
+-> These should be minimal, as one slave can only compute one atomic
+   function. Slaves should not start other slaves. The master has to look at
+   a  client's job  and decide  to what  extend the  request must  be split.
+   Functions  known to  the master  can  be left  in a  minimal job  without
+   changing  its  minimality. But  non-minimal  jobs  must be  split  across
+   multiple slaves.
+
+------
+| v | Results must be  in pairs: (input_tupel,output_tupel) with arbitrary |
+tupels! | "RES1" - 1-to-1 result which means that there was one input to the
+function and one  output can now be given. "RESL"  - Left-heavy result which
+means that  there was an  n-tupel given to the  function and a  single value
+result is now known. "RESR" - Right-heavy result which means there there was
+a  single value  as input  and  an n-tupel  as output.  "RESB" -  Both-heavy
+meaning that both, input and output, are tupels.
+
+        The
+
+"RESC" - Results as  8-Byte integer. L is N*8. B contains  N integers. "R" -
+Results as 4-Byte float.  L is N*4. B contains N floats.  "RF8" - Results as
+8-Byte float. L is  N*8. B contains N floats. "RB " -  Result as big integer
+with arbitrary number of bits. Data is in B and its length in L.
+
+        These message  types may be sent  from master to a  client to report
+        results, or, in case of "RB ", a single result.
+
+"E " - Error. L is 4 and the 4-Byte error code is found in B.
+
+        This  packet is  a response  to a  client's or  slave's request  and
+        indicates an  error. Possible error  codes are:  " " -  (all spaces)
+        Information not  available "P "  - P-Syntax error.  "S " -  No slave
+        left to take a job over. "SPC " - No space left here. "0R " - Result
+        not available.
+
+"A "  - Acknowledgement. L is  4 and the 4-Byte  acknowledgement information
+        code if in B.
+
+        This  is a  response  packet  to a  client's  request and  indicates
+        success.  The acknowledgement  code is  meant to  provide additional
+        information about  the requested  procedure. There are  currently no
+        codes defined. It is advised to set it to all spaces.
+
+        --> "T " - Trusted client  (signature), may report results back "U "
+        - Untrusted client
+
+"O " - Set option. An ASCII  string of the format Name=Value is contained in
+B and its length is in L.
+
+        This message instructs  the slave it is sent to,  to set an internal
+        option and subsequently behave accordingly. Valid options with their
+        possible values are:
+
+        "Interval": This affects the time interval when results are reported
+        back from  a slave to  the master.  If it is  -1, then the  slave is
+        suspended. It  shall continue computing  but buffer its  results and
+        not send them to the master. If  the buffer capacity of the slave is
+        exhausted, it shall stop computing. If  this value is 0, then values
+        shall be reported as soon as they are present. Any positive value is
+        the number of  seconds to buffer results until they  are sent to the
+        master. The letter  D instructs to reset the setting  to its default
+        value. The advised default in slave implementations is 120.
+
+3.2.2 What a slave may send
+---------------------------
+
+"RI F B                                                                    "
+
+"OI F B                                                                    "
+
+        These packet types are similar to the ones prefixed with "R" instead
+        of "O" but they signify that  the results are already old, i.e. they
+        were computed  in a previous session  of this slave but  it couldn't
+        commit them to the master for  some reason before going offline (see
+        the "G " type below).
+
+        The body follows this layout:
+
+        [ Former ID Length F | 4 Former ID | F Body | L                  B ]
+
+"E "
+
+        Errors specific to  slaves are: "IMP " - Impossible  to fulfill job.
+        Since means that the slave  is incapable of calculating any further.
+        Possible reasons are  that a slave on which this  slave depends went
+        offline and there are no needed results left in the master's depot.
+
+                 After this error  was sent, the slave is expected  to be in
+                 the idle state again.
+
+"A "
+
+"S " - Slave registration. L is 0 and B is empty.
+
+        A host registers itself as a  slave. It stays idle until it receives
+        a job from the master.
+
+"G "  - Slave de-registration ("go  offline"). L is  0 and B is  empty. This
+indicates to the master that a client.
+
+        Before de-registering itself and going  offline, it is considered to
+        be polite  of the  slave to  commit all  accumulated results  to the
+        master or  at least buffer them  persistently to send them  back the
+        next time.
+
+        When the  TCP connection between a  slave and a master  breaks, this
+        event is equivalent to a "G " packet from the slave.
+
+"FIN " - Slave is done with the job. L is 0 and B is empty.
+
+        If  the  slave  has  computed  a  job to  its  end,  it  sends  this
+        notification to  the master after committing  all remaining results.
+        The slave then stays idle until the master mediates a new job.
+
+"Q " - Slave queries result. The query is formulated in P. The request is in
+B, its length in L.
+
+        Since the  protocol says that  slaves get  only minimal jobs,  it is
+        highly expected that  the master will return the  wishes result from
+        its depot  or put this  request on a wait  queue when the  result is
+        currently unavailable but another slave is at calculating it. If the
+        master sends an  "E 0R " response,  the client will report  "E IMP "
+        and then go back to the idle state.
+
+3.2.3 What a client may send
+----------------------------
+
+"P "
+
+"IC " - Give  client information (if the client allows  to). The client's ID
+is in B, its length in L. "IS "  - Give slave info (if the slave allows to).
+The slave's ID is in B, its length in L. "IT " - Give statistics.
+
+3.2.4 Special packet types
+--------------------------
+
+"Z " - GZip X " - XZ                                     -compressed packet.
+
+3.3 Requests and responses
+--------------------------
+
+The protocol in its living is best illustrated using a finite auomate:
+
+If a slaves  goes offline, the corresponding client is  notified (to perhaps
+resubmit the job  and get another free  slave). The slave must  have by then
+already committed its data to the master or at least its local depot.
+
+Slaves must  be trusted  hosts. Slave  registration must pass  a check  in a
+database on  the master of  pre-registered hosts. Identification is  done by
+PGP or similar identity-checking means.
+
+This works the same with voluntary clients.
+
+However, a log  is kept which host  entered which data so that  a bad host's
+data can always be deleted afterwards.
+
+MOTD as "A " type packet.

@@ -1,0 +1,3 @@
+[submodule "Makefile.build"]
+	path = Makefile.build
+	url = http://github.com/tboege/Makefile.build

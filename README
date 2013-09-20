@@ -1,0 +1,18 @@
+Unicomplex
+----------
+
+Yet to come.
+
+Roadmap
+-------
+
+client/ - Sample clients source code.
+depot/  - The depot routines are called by the master internally to provide
+          it a means to organise, retrieve and request results. It is also
+	  used by slaves for storage-
+master/ - The master is the hub between slaves and clients; it accepts jobs
+          and mediates results-
+p-lang/ - The pseudo-language P used to formalise jobs and its assembler/
+          disasembler-
+proto/  - Any network- and protocol-related code.
+slave/  - Slave source code.

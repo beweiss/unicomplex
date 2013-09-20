@@ -1,0 +1,4 @@
+*.swp
+*.o
+*.deps
+commit.new
