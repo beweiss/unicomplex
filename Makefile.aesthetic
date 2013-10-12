@@ -4,7 +4,7 @@
 define do_aesthetic =
 $(Q)if [ -d "$(1)" ]; then echo -e "  AESTH \t" $(RELDIR)$(1) $(B_SINK); \
 $(MAKE) -C $(1) $@;   else echo -e "  FORMAT\t" $(RELDIR)$(1) $(B_SINK); \
-par 76jT -P=[-:_x07 -Q=" <$(1) >/tmp/$(1) && cp /tmp/$(1) $(1); fi
+par 76jT -P=[-:_x07\|+_s -Q=\" <$(1) >/tmp/$(1) && cp /tmp/$(1) $(1); fi
 
 endef
 
