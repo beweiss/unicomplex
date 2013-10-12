@@ -1,0 +1,29 @@
+/*
+ *	unicomplex/p-lang/goldbach.P - Goldbach's conjecture
+ *
+ *	(C) 2013 Tobias Boege <tobias@gambas-buch.de>
+ */
+
+/*
+ * Return the w-th Goldbach partition of n. With growing w, p grows.
+ */
+provides goldbachpart : (int n, int w) -> (int p, int q) {
+	if (n % 2) /* TODO: Compiler optimisation! */
+		/* TODO: Invalid input? Or always do n *= 2? This would mean
+		 *       that n is not a number but an index into the domain
+		 *       of the function... */;
+	if (!w) {
+		/* ... */
+		return (p, q);
+	}
+	/* We only need one partition and can then find all the other ones
+	 * by incrementing and decrementing p resp. q.
+	 *
+	 * NOTE: No, one should rather obtain r = pi(p) and then increment
+	 *       this number and check if n - p(r) is prime. Then, we got a
+	 *       new Goldbach partition of n.
+	 */
+	(p, q) = goldbachpart(n, 0);
+	/* ... */
+	return (p, q);
+}

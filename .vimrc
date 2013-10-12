@@ -18,4 +18,7 @@ function LoadTemplate()
   echo ""
 endfunction
 
+set runtimepath+=.vim/
+
 au BufNewFile *.* call LoadTemplate()
+au BufRead,BufNewFile *.P :setfiletype P

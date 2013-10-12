@@ -1,0 +1,185 @@
+/*
+ *	unicomplex/p-lang/primes.P - Primes, their reciprocals, their number
+ *	                             and a test
+ *
+ *	(C) 2013 Tobias Boege <tobias@gambas-buch.de>
+ */
+
+/*
+ * XXX: Should the client maybe get the opportunity to specify certain
+ *      input tuples he wants to have computed (requiring this would solve
+ *      the float-in-input-tuple problem). The user should use the `compute'
+ *      keyword to do so - and the slave will not automatically call any
+ *      function repeatedly! That's it!
+ */
+
+/*
+ * TODO: One slave can use all the `provides' in the source file it
+ *       processed. Functions defined there will override functions with the
+ *       same name in the collective's global symbol table.
+ *
+ *       If the slave has resolved a symbol, it will not look it up again.
+ *       The client should, however, get the chance to stop his slave using
+ *       a "HALT" packet. The master maintains the client <-> slave
+ *       association.
+ */
+
+/*
+ * NOTE: The parser will become problems because parentheses are used for:
+ *        * precedence elevation in mathematical/logical expressions;
+ *        * function calls/operator appendage;
+ *        * tuple definition.
+ *
+ *       Like in
+ *
+ *       if (f(x) == (1))
+ *
+ *       What does each of the parenthesis pairs mean?
+ *
+ *       The problems will be resolved by the following strategy: one knows
+ *       when to distinguish between the first and second case (when an
+ *       identifier is before the opening parenthesis). One of these has
+ *       always higher precedence than the second, so the above line would
+ *       open an if statement to compare the result of executing f(x) with
+ *       the numerical value 1. (Unless f is known to return a tuple. In
+ *       that case, (1) is taken as a tuple notation.) To force (1) to be
+ *       recognised as a tuple, use a cast: ((tuple) (1)).
+ *
+ *       Also, anonymous tuples are to be treated differently if their on
+ *       the RHS of an assignment:
+ *
+ *       (p, q) = (1, 2)
+ *
+ *       shall be equal to
+ *
+ *       p = 1; q = 2;
+ *
+ *       instead of
+ *
+ *       tupel anon = (p, q); anon = (1, 2);
+ *
+ *       where anon would then have elements 1 and 2. Clearly, we can
+ *       determine if a tuple is anonymous and implement that. Note that
+ *       something like
+ *
+ *       (1, 2) = (3, 4)
+ *
+ *       is invalid. An anonymous tuple on the RHS of an assignment must
+ *       only contain variables.
+ */
+
+provides __async p : (int n) -> (int p) {
+	int c = 1, r = 2, m;
+
+	/* TODO */
+	report (c, r);
+}
+
+/*
+ * TODO: Maybe, we should also add a special __param section which
+ *       transforms (tuples of?) natural numbers into valid input tuples so
+ *       that functions may have a limited, scattered domain.
+ *
+ *       Add a finish; operator to indicate that the whole domain of the
+ *       function was processed.
+ *
+ *       What about float inputs anyways? In what delta should they
+ *       increase? Or better: How to determine the next input parameter if
+ *       its type is float?
+ */
+
+provides _p : (int n) -> (float r) {
+	r = 1 / p(n);
+}
+
+/*
+ * Different kind of primality test as we can rely on a good set of primes
+ * most probably. The idea is to pick a starting number `s' close to pi(n)
+ * and then try p(s) and p(s +/- ?), i.e. the s-th prime and the primes
+ * around it until we either verified that n == p(s +/- ?) or we have found
+ * neighbouring primes above and below n which proves that n is composite.
+ */
+provides isprime : (int n) -> (bool b) {
+	/* For `s', we use that pi(n) ~ n/ln(n) */
+	int s = n / ln(n), x = p(s), d = sgn(n - x);
+
+loop:
+	if (x == n)
+		return 1;
+	else if ((x < n && d == -1) || (x > n && d == 1))
+		return 0;
+	/*
+	 * This is not that good as we know pi(N) >> N/ln(N) for large N.
+	 * Maybe something like
+	 *
+	 * 	t = abs(n - x);
+	 * 	s += d * (t / ln(t));
+	 *
+	 * is more appropriate to get closer to n in less time. We should
+	 * write up a proof for this somewhen.
+	 *
+	 * The only missing thing would be a sane lower bound `y' for `t'
+	 * such that if t < y, we use the s += d technique again to not jump
+	 * too much around the right number.
+	 */
+	s += d;
+	x = p(s);
+	goto loop;
+}
+
+/*
+ * This is simple again.
+ *
+ * NOTE: We should also introduce C-style control structures. In C, this
+ *       function could be expressed as:
+ *
+ *       	int m = 2;
+ *
+ *       	for (c = 0; m <= n; m++)
+ *       		if (isprime(m))
+ *       			c++;
+ *       	return c;
+ *
+ *       However, the below code will almost literally be assembled into
+ *       machine code. I can clearly see it in my mind.
+ */
+provides compute __code pi : (int n) -> (int c) {
+__init:
+	/*
+	 * I want to briefly document here what I intend the __init, __code
+	 * and __async stuff for. These three mark sections in a function.
+	 *
+	 * But __code and __async are mutually exclusive and also act like a
+	 * flag in the function declaration. __code is the default and does
+	 * not need to be given. __code indicates that the function can be
+	 * called at will from outside and gives a result back.
+	 *
+	 * An __async function on the other side is meant to run for itself
+	 * and report results to the outside world when they are ready. This
+	 * is useful for algorithms such as the Sieve of Eratosthenes where
+	 * you have to build on all lower numbers than a given parameter. So
+	 * it's best to implement the routine __async: it cannot be called
+	 * but runs continually providing new results faster.
+	 *
+	 * The __init section marks code run only when the function is first
+	 * executed. __code and __async mark the start of the corresponding
+	 * function code. Both cannot be specified together. If there is no
+	 * __init, then __code or __async need not be specified as the
+	 * compiler implies them (as done in the functions above).
+	 *
+	 * Each of the sections has its own variable scope. Function-global
+	 * variables are to be noted outside of all sections.
+	 */
+
+__code:
+	int m = 2;
+
+	c = 0;
+loop:
+	if (m > n)
+		return c;
+	if (isprime(m))
+		c++;
+	m++;
+	goto loop;
+}
