@@ -14,7 +14,7 @@ under the keyword `unicomplex':
  - master, slaves and clients.
 
 The `master' functions  as the outward appearance of  a computer collective.
-It transparently connects the both other parties: slaves and clients.
+It transparently connects the both other parties: slaves and clients       .
 
 For slaves, it works  like a hub: it is the central  point where all results
 are regularly reported to.
@@ -46,13 +46,24 @@ data from the collective.
 Terms used in the explanation of other terms in this list are suffixed by an
 asterisk.
 
- - `UP' :  the Unicomplex Protocol whose  definition this is -  `Master' : a
- central, public server  (host or program) implementing the UP*  - `Slave' :
- an auxiliary computer  (or program) connected to a  master* - `Collective':
- the  set of  a  master* and  its  associated  slaves* -  `Job'  : a  formal
- definition of some task for the collective* to compute. It is formulated in
- the P  language. - `Client' :  a host (or  program) which sends jobs*  to a
- collective's* master*
+ - `UP':
+the Unicomplex Protocol whose definition this is.
+
+ - `Master':
+a central, public server (host or program) implementing the UP*
+
+ - `Slave':
+an auxiliary computer (or program) connected to a master*
+
+ - `Collective':
+the set of a master* and its associated slaves*
+
+ - `Job':
+a  formal definition  of some  task for  the collective*  to compute.  It is
+formulated in the P language.
+
+ - `Client':
+a host (or program) which sends jobs* to a collective's* master*
 
 3 The UP in detail
 ------------------
@@ -121,6 +132,11 @@ signing procedure  (described in  the previous  section). Should  the packet
 verification fail, the master responds with an error message. Otherwise, the
 packet is authentic and processed further.
 
+It is also possible  that the Sender ID and Signature  field are all zeroes.
+This may only  come from a client  and makes it an  `untrusted' client. Jobs
+are accepted but results rejected. In  other words, only trusted clients can
+at all be voluntary.
+
 3.2 The Type field
 ------------------
 
@@ -134,172 +150,485 @@ really filled with spaces (ASCII 0x20).
 3.2.1 Finite automate master
 ----------------------------
 
-There  is  only  one  state  of the  master  interesting  to  this  protocol
-definition: `serving' (the other would be  `offline' and does not need to be
-specified in a protocol). However, the amount of possible inputs and outputs
-is great.
+There  are only  two  states  of the  master  interesting  to this  protocol
+definition: `serving'  and `sleeping' (a  third would be `offline'  and does
+not need  to be specified  in a protocol).  However, the amount  of possible
+inputs and outputs is great.
 
-The following is a table which
+Note that the treatment of a packet which is not element of the input set of
+a state is implementation-defined. This  allows for custom extensions to the
+protocol. Otherwise, the packet is most likely silently ignored.
 
-"PJOB" -  Request in  the P  language. The ASCII  string containing  the job
-definition is found in B. Its length is L.
+The following  table lists the data  and state transitions briefly  (a tilde
+denotes that the state remains unchanged):
 
-        This message  type may be sent  from master to a  slave dictating to
-        work on this job.
++----------+--------+--------+------------+
+|   State  |  Input | Output | Next State |
++----------+--------+--------+------------+
+| Serving  | "MOTD" | "AMOD" | ~          |
+|          +--------+--------+            |
+|          | "PJOB" | "ATRU" |            |
+|          |        | "AUTR" |            |
+|          |        | "PJOB" |            |
+|          |        | "EP  " |            |
+|          |        | "ESLV" |            |
+|          |        | "ESPC" |            |
+|          +--------+--------+            |
+|          | "RES " | "A   " |            |
+|          |        | "RES " |            |
+|          |        | "ESPC" |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | "SLAV" | "A   " |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | "GONE" | "A   " |            |
+|          |        | "ENR " |            |
+|          +--------+--------+            |
+|          | "FIN " | "A   " |            |
+|          |        | "FIN " |            |
+|          +--------+--------+            |
+|          | "QRY " | "RES " |            |
+|          |        | "EUTR" |            |
+|          |        | "ENR " |            |
+|          +--------+--------+            |
+|          | "ICLI" | "AICL" |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | "ISLV" | "AISL" |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | "ICOL" | "AICO" |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | "IMP " | "A   " |            |
+|          |        | "EUTR" |            |
+|          +--------+--------+            |
+|          | +      | "RES " |            |
+|          |        | 0      |            |
+|          +--------+--------+------------+
+|          | !      | "HALT" | 0          |
+|          |        | "GONE" |            |
+|          +--------+--------+------------+
+|          | *      | "SLP " | Sleeping   |
++----------+--------+--------+------------+
+| Sleeping | !      | "HALT" | 0          |
+|          |        | "GONE" |            |
+|          +--------+--------+------------+
+|          | #      | "WAKE" | Serving    |
++----------+--------+--------+------------+
 
--> These should be minimal, as one slave can only compute one atomic
-   function. Slaves should not start other slaves. The master has to look at
-   a  client's job  and decide  to what  extend the  request must  be split.
-   Functions  known to  the master  can  be left  in a  minimal job  without
-   changing  its  minimality. But  non-minimal  jobs  must be  split  across
-   multiple slaves.
+<-- Errors as inputs?
 
-------
-| v | Results must be  in pairs: (input_tupel,output_tupel) with arbitrary |
-tupels! | "RES1" - 1-to-1 result which means that there was one input to the
-function and one  output can now be given. "RESL"  - Left-heavy result which
-means that  there was an  n-tupel given to the  function and a  single value
-result is now known. "RESR" - Right-heavy result which means there there was
-a  single value  as input  and  an n-tupel  as output.  "RESB" -  Both-heavy
-meaning that both, input and output, are tupels.
+Two possible  additional outputs to every  input are the packets  "ESIG" and
+"ECHK" which  are sent when the  signature was unknown or  the signature was
+known but the checksum is bad.
 
-        The
+The  * and  # inputs  are special  ones not  subject to  this protocol.  The
+`Sleeping' state  is therefore  not required to  be implemented.  These both
+inputs and the  `Sleeping' state are mentioned here  nevertheless because it
+is  a  concern  of security  to  let  the  person  who operates  the  master
+decide to  temporarily put  it to  sleep. It is  recommended to  implement a
+UNIX  socket  interface for  these  two  inputs.  The  output is  also  left
+implementation-defined.
 
-"RESC" - Results as  8-Byte integer. L is N*8. B contains  N integers. "R" -
-Results as 4-Byte float.  L is N*4. B contains N floats.  "RF8" - Results as
-8-Byte float. L is  N*8. B contains N floats. "RB " -  Result as big integer
-with arbitrary number of bits. Data is in B and its length in L.
+The + input is a timer-based implementation-defined input. This is also only
+advised  by the  protocol to  try to  balance network  traffic overhead  and
+waiting time. The  idea is to wait  for a fixed time,  buffering all results
+from slaves. When the periodic + input arrives, the relevant data is sent in
+one "RES "  packet to the client. It  is also possible that no  packet is at
+all sent which is denoted by the 0 symbol.
 
-        These message  types may be sent  from master to a  client to report
-        results, or, in case of "RB ", a single result.
-
-"E " - Error. L is 4 and the 4-Byte error code is found in B.
-
-        This  packet is  a response  to a  client's or  slave's request  and
-        indicates an  error. Possible error  codes are:  " " -  (all spaces)
-        Information not  available "P "  - P-Syntax error.  "S " -  No slave
-        left to take a job over. "SPC " - No space left here. "0R " - Result
-        not available.
-
-"A "  - Acknowledgement. L is  4 and the 4-Byte  acknowledgement information
-        code if in B.
-
-        This  is a  response  packet  to a  client's  request and  indicates
-        success.  The acknowledgement  code is  meant to  provide additional
-        information about  the requested  procedure. There are  currently no
-        codes defined. It is advised to set it to all spaces.
-
-        --> "T " - Trusted client  (signature), may report results back "U "
-        - Untrusted client
-
-"O " - Set option. An ASCII  string of the format Name=Value is contained in
-B and its length is in L.
-
-        This message instructs  the slave it is sent to,  to set an internal
-        option and subsequently behave accordingly. Valid options with their
-        possible values are:
-
-        "Interval": This affects the time interval when results are reported
-        back from  a slave to  the master.  If it is  -1, then the  slave is
-        suspended. It  shall continue computing  but buffer its  results and
-        not send them to the master. If  the buffer capacity of the slave is
-        exhausted, it shall stop computing. If  this value is 0, then values
-        shall be reported as soon as they are present. Any positive value is
-        the number of  seconds to buffer results until they  are sent to the
-        master. The letter  D instructs to reset the setting  to its default
-        value. The advised default in slave implementations is 120.
-
-3.2.2 What a slave may send
+3.2.2 Finite automate slave
 ---------------------------
 
-"RI F B                                                                    "
++-----------------+--------+--------+-----------------+
+|      State      |  Input | Output |    Next State   |
++-----------------+--------+--------+-----------------+
+| Idle            | "PJOB" | "A   " | Serving         |
+|                 |        +--------+-----------------+
+|                 |        | "ESPC" | ~               |
+|                 +--------+--------+-----------------+
+|                 | "SLP " | "A   " | IdleSleeping    |
+|                 +--------+--------+                 |
+|                 | *      |        |                 |
+|                 +--------+--------+-----------------+
+|                 | !      | "GONE" | 0               |
++-----------------+--------+--------+-----------------+
+| Serving         | "HALT" | "A   " | Idle            |
+|                 +--------+--------+-----------------+
+|                 | "ENR " | "IMP " | Idle            |
+|                 +--------+--------+-----------------+
+|                 | +      | "RES " | ~               |
+|                 |        | 0      |                 |
+|                 +--------+--------+-----------------+
+|                 | "SLP " | "A   " | ServingSleeping |
+|                 +--------+--------+                 |
+|                 | *      |        |                 |
+|                 +--------+--------+-----------------+
+|                 | !      | "GONE" | 0               |
+|                 +--------+--------+-----------------+
+|                 | ^      | "FIN " | Idle            |
++-----------------+--------+--------+-----------------+
+| ServingSleeping | "WAKE" | "A   " | Serving         |
+|                 +--------+--------+                 |
+|                 | #      |        |                 |
+|                 +--------+--------+-----------------+
+|                 | !      | "GONE" | 0               |
++-----------------+--------+--------+-----------------+
+| IdleSleeping    | "PJOB" | "ESLP" | ~               |
+|                 +--------+--------+-----------------+
+|                 | "WAKE" | "A   " | Idle            |
+|                 +--------+--------+                 |
+|                 | #      |        |                 |
+|                 +--------+--------+-----------------+
+|                 | !      | "GONE" | 0               |
++-----------------+--------+--------+-----------------+
 
-"OI F B                                                                    "
+<-- Errors as inputs?
 
-        These packet types are similar to the ones prefixed with "R" instead
-        of "O" but they signify that  the results are already old, i.e. they
-        were computed  in a previous session  of this slave but  it couldn't
-        commit them to the master for  some reason before going offline (see
-        the "G " type below).
+Before  de-registering itself  and going  offline,  it is  considered to  be
+polite of the  slave to commit all  accumulated results to the  master or at
+least buffer them persistently to send them back the next time.
 
-        The body follows this layout:
+When the TCP connection  between a slave and a master  breaks, this event is
+equivalent to a "G " packet from the slave.
 
-        [ Former ID Length F | 4 Former ID | F Body | L                  B ]
-
-"E "
-
-        Errors specific to  slaves are: "IMP " - Impossible  to fulfill job.
-        Since means that the slave  is incapable of calculating any further.
-        Possible reasons are  that a slave on which this  slave depends went
-        offline and there are no needed results left in the master's depot.
-
-                 After this error  was sent, the slave is expected  to be in
-                 the idle state again.
-
-"A "
-
-"S " - Slave registration. L is 0 and B is empty.
-
-        A host registers itself as a  slave. It stays idle until it receives
-        a job from the master.
-
-"G "  - Slave de-registration ("go  offline"). L is  0 and B is  empty. This
-indicates to the master that a client.
-
-        Before de-registering itself and going  offline, it is considered to
-        be polite  of the  slave to  commit all  accumulated results  to the
-        master or  at least buffer them  persistently to send them  back the
-        next time.
-
-        When the  TCP connection between a  slave and a master  breaks, this
-        event is equivalent to a "G " packet from the slave.
-
-"FIN " - Slave is done with the job. L is 0 and B is empty.
-
-        If  the  slave  has  computed  a  job to  its  end,  it  sends  this
-        notification to  the master after committing  all remaining results.
-        The slave then stays idle until the master mediates a new job.
-
-"Q " - Slave queries result. The query is formulated in P. The request is in
-B, its length in L.
-
-        Since the  protocol says that  slaves get  only minimal jobs,  it is
-        highly expected that  the master will return the  wishes result from
-        its depot  or put this  request on a wait  queue when the  result is
-        currently unavailable but another slave is at calculating it. If the
-        master sends an  "E 0R " response,  the client will report  "E IMP "
-        and then go back to the idle state.
-
-3.2.3 What a client may send
+3.2.3 Finite automate client
 ----------------------------
 
-"P "
++--------+--------+--------+------------+
+|  State |  Input | Output | Next State |
++--------+--------+--------+------------+
+| Client | $      | "PJOB" | ~          |
+|        +--------+--------+            |
+|        | "GONE" | 0      |            |
+|        | "IMP " |        |            |
+|        | "FIN " |        |            |
+|        +--------+--------+            |
+|        | "RES " | 0      |            |
++--------+--------+--------+------------+
 
-"IC " - Give  client information (if the client allows  to). The client's ID
-is in B, its length in L. "IS "  - Give slave info (if the slave allows to).
-The slave's ID is in B, its length in L. "IT " - Give statistics.
+Listed  are  only packets  considered  especially  crucial to  the  client's
+execution flow.  There are several other  inputs which is mainly  data to be
+presented to the user  which was asking for it in the  first place (like the
+ICLI -> AICL,  etc.) packets. Generally, the client's  implementation is not
+important to this  protocol. One can see  the valid inputs from  a client to
+the collective by looking at the master automate.
 
-3.2.4 Special packet types
---------------------------
+3.2.4 Packet type details
+-------------------------
 
-"Z " - GZip X " - XZ                                     -compressed packet.
+In  the following,  each  packet type  presented in  the  above tables  (the
+`normal' packet types) are described and explained in greater detail.
 
-3.3 Requests and responses
---------------------------
+In addition, there  are two special packet types which  are explained in the
+section after next. This distinction is useful in later definitions.
 
-The protocol in its living is best illustrated using a finite auomate:
+3.2.4.1 Normal packet types
+---------------------------
 
-If a slaves  goes offline, the corresponding client is  notified (to perhaps
-resubmit the job  and get another free  slave). The slave must  have by then
-already committed its data to the master or at least its local depot.
+You will see in the descriptions that packets from a first party to a second
+party may result in packets from the second party back to the first and/or a
+third party. As an example, take this situation which is also stated below:
 
-Slaves must  be trusted  hosts. Slave  registration must pass  a check  in a
-database on  the master of  pre-registered hosts. Identification is  done by
-PGP or similar identity-checking means.
+If a  slave goes offline, the  corresponding client is notified  (to perhaps
+resubmit the job and get another free slave).
 
-This works the same with voluntary clients.
+ ! - Master/slave stop
 
-However, a log  is kept which host  entered which data so that  a bad host's
-data can always be deleted afterwards.
+External signal to stop the host (master or slave).
 
-MOTD as "A " type packet.
+If the  master is stopped,  it will stop all  slaves using a  "HALT" packet,
+still accepting results from them. While  the slaves are stopped, the master
+will generate  "GONE" packets  for all  the clients and  it will  not accept
+"PJOB" packets anymore.
+
+If a slave is stopped, it sends a "GONE" packet and submits all .
+
+ # - Wake up
+
+If the host was sleeping, it will now continue working.
+
+ $ - P job user input
+
+A client may now  send a "PJOB" packet to communicate the  user input to the
+collective.
+
+ * - Go to sleep
+
+If a host is working or idle, it  goes to sleep now which means that it will
+not work anymore,  send result packets or  accept jobs. If a  master goes to
+sleep, it sends "SLP " packets to the slaves so that they DON'T SEND RESULTS
+ANYMORE. (<--  that's a  difference to  the "SLP "  packet!!!) OTOH,  IF THE
+SLAVES CONTINUE  COMPUTING, THE  MASTER WILL  STILL BE  FLOODED WITH  "QRY "
+PACKETS AND SO THE SLAVES SHOULD REALLY ALSO GO TO SLEEP.
+
+ + - Result emit timer
+
+The result  emit timer  is an  external signal  which shall  balance network
+traffic and  waiting time for results.  Results are buffered locally  by the
+slaves  and the  master and  then sent  in  one bulk  to the  master or  the
+respective client. The interval defaults to 120 seconds.
+
+ "ACK " - ACK
+
+A non-qualified acknowledgement.
+
+ "AICL" - ACK, client information
+
+Qualified acknowledgement that comes with  the requested information about a
+client. The body contains: "FILE=$F" where  $F denotes the contents of the P
+job that the client sent.
+
+ "AICO" - ACK, collective information
+
+Qualified     acknowledgement    that     comes    with     the    requested
+information     about     the     collective.     The     body     contains:
+"FUNCTIONS=$F;DBSIZE=$D;WSLAVES=$W;ISLAVES=$I;"     where     $F    is     a
+comma-separated list of  function names in the collective's  database, $D is
+the database total size, $W is the number of currently working slaves and $I
+is the number of currently idle slaves.
+
+ "AISL" - ACK, slave information
+
+Qualified acknowledgement that comes with  the requested information about a
+slave. The body contains: "IP=$I;FUNCTION=$F" where  $I is the IP address in
+dotted-decimal  format and  $F is  the function  name that  it is  currently
+calculating. <-- How is the slave then identified?
+
+ "ATRU" - ACK, trusted host
+
+Qualified acknowledgement that  the client who submitted a P  job is trusted
+and may send its results back to the master.
+
+ "AUTR" - ACK, untrusted host
+
+Qualified  acknowledgement  that  the  client  who  submitted  a  P  job  is
+untrusted. The job was accepted but the client is not known and results will
+not be accepted from it.
+
+ "ECHK" - NAK, checksum bad with given signature
+
+Qualified error  stating that the packet's  checksum was bad with  the given
+signature.  If this  error  is returned,  the packet  was  not yet  analysed
+semantically, but only for integrity.
+
+ "ENR " - NAK, no such record or slave
+
+Qualified error stating that there the  is no record for the wanted function
+with the given input in the collective's  database and that there is also no
+slave  who  is currently  calculating  this  function.  This is  a  possible
+response to a slave's  "QRY " packet. A slave who gets  a negative answer to
+one of its "QRY  " packets may then send an "IMP "  packet because it cannot
+continue computing.
+
+It is also sent  to a client if his slave goes offline.  The client may then
+resubmit the job and hope to get another slave.
+
+ "EP  " - NAK, not a valid P job
+
+Qualified  error  stating that  there  was  a parser  error  in  the file  a
+preceding "PJOB" packet transmitted. It implies that no job was started.
+
+ "ESIG" - NAK, signature unknown
+
+Qualified error  stating that the  used signature  is not known.  This means
+that the ID field contained a non-zero value which is not in the database of
+trusted hosts.
+
+ "ESLP" - NAK, host sleeps
+
+Qualified error  in response  to a  "PJOB" packet stating  that the  host is
+currently sleeping and will not accept jobs.
+
+ "ESLV" - NAK, no slave left
+
+Qualified error in response to a "PJOB" packet stating that there is no free
+slave[*] left to process the job.
+
+[*] Is there something like a `free slave' anyway? :-)
+
+ "ESPC" - NAK, no space left
+
+Qualified error stating  that the master has no space  left at his disposal.
+It cannot  possibly continue to maintain  the collective and will  shut down
+soon. This  can be a response  to a slave's  or client's "RES "  packet. The
+master, after noticing the situation, will start to "HALT" the slaves.
+
+ "EUTR" - NAK, because untrusted
+
+Qualified  error stating  that the  requested operation  is only  granted to
+trusted hosts and the host asking to perform it is untrusted.
+
+ "FIN " - Job finished
+
+Packet so  signify that  the P  job a  slave was  working on  finished. This
+packet is sent from a slave to  the master and then directed from the master
+to the associated client.
+
+ "GONE" - Slave gone
+
+This packet is sent  from a slave whenever it is going  to shut itself down.
+It shall have by  then already committed its data to the  master or at least
+to its local  database to later submit  them if the slave needs  to get down
+immediately. The master can only acknowledge this packet.
+
+ "HALT" - Slave immediate stop
+
+Sent by the master to a slave to make it stop immediately. A reason could be
+that the master has no space left  and can't operate further. If this packet
+is received, the slave shall not bother sending results but shut itself down
+as soon as possible. It is considered appropriate, however, to store pending
+results to a local storage to submit them once the master is online again.
+
+---> "PHLT" - Release slave from a P job
+
+ "ICLI" - Send information about client
+
+ 
+
+ "ICOL" - Send information about collective
+
+ 
+
+ "IMP " - Impossible to fulfill job (from slave)
+
+ 
+
+ "ISLV" - Send information about slave
+
+ 
+
+ "MOTD" - Message of the day
+
+Sent from a client to the master to request its message of the day. This has
+only formal/informational reasons.
+
+ "PJOB" - Job definition in P
+
+Send a  job in the  P language  to the collective.  The client sends  such a
+packet to the master which then redirects it  to a slave if there is one. If
+there is no slave  left, an "ESLV" shall be returned to  the client. The job
+definition and any auxiliary functions shall be in the body of the packet.
+
+If the job is malformed, "EP " is returned.
+
+ "QRY " - Slave result query
+
+Sent by slaves to query function values which are not defined in its own job
+definition. The  master will, by some  means[*], locate the result  and then
+send a "RES  " packet back to the  slave if the given function  was found in
+the database with the wanted input or  if a slave is currently registered to
+calculate that function. Otherwise, the error "ENR " is returned.
+
+[*] It can use a local database as commonly stated in this protocol
+definition but in fact, it can also  use a depot server or storage slaves if
+there is no possibility to attach enough storage to the master itself.
+
+The format of the body is: "$F,$I" where $F depicts the function by its name
+and $I is the input tuple. <-- in what format?
+
+ "RES " - Result
+
+ 
+
+ "SLAV" - Slave registration
+
+ 
+
+ "SLP " - Make slave sleep (to reduce master's network traffic)
+
+This surely comes from the master (is  not equal to the * signal). The slave
+may decide  on its  own if  it should really  go to  sleep: the  master will
+clearly answer all "QRY "s as "ESLP" from now on but if the slave knows that
+he doesn't need  any "QRY "s, he may continue  computing but without sending
+results to the master.
+
+ "AMOD" - Message of the day reply
+
+In response to a "MOTD" packet, the server's MOTD shall be delivered in this
+packet type.
+
+ "WAKE" - Make slave wake up
+
+ 
+
+ "^   " - Job finish
+
+ 
+
+You may have  noticed that there are five packets  concerned with signatures
+and integrity: "ECHK", "ESIG", "EUTR" and finally "ATRU" und "AUTR".
+
+"ECHK" is sent when  the given ID is known but the checksum  is bad when the
+corresponding key is applied. This is an authorisation error. "ESIG" denotes
+that the ID is not known to the database. Likely the client connected to the
+wrong collective or the person's record in the database was removed. Both of
+these errors can only happen if the client actually tries to become trusted.
+"EUTR" means
+
+3.2.4.2 Special packet types
+----------------------------
+
+There  are  two standard  ways  to  compress  a  packet. These  packets  are
+`special' packets because they contain an entirely different packet in their
+message body.
+
+ "CZIP" - GZip compressed
+ "CLZM" - XZ compressed
+
+[ Type T2   | 4 B ]
+[ Length L2 | 4 B ]
+[ Body B2   | L B ]
+-------------------
+          8 + L B
+
+Appendix A - Packet type summary
+--------------------------------
+
+Protocol-defined inputs:
+ FIN  - Job finished
+ GONE - Slave gone
+ HALT - Slave immediate stop
+ ICLI - Send information about client
+ ICOL - Send information about collective
+ IMP  - Impossible to fulfill job (from slave)
+ ISLV - Send information about slave
+ MOTD - Message of the day
+ PJOB - Job definition in P
+ QRY  - Slave result query
+ RES  - Result
+ SLAV - Slave registration
+ SLP  - Make slave sleep (to reduce master's network traffic)
+ WAKE - Make slave wake up
+
+External/implementation-defined inputs:
+ !    - Master/slave stop
+ #    - Wake up
+ $    - P job user input
+ *    - Go to sleep
+ +    - Result emit timer
+ ^    - Job finish
+
+Protocol-defined outputs:
+ ACK  - ACK
+ AICL - ACK, client information
+ AICO - ACK, collective information
+ AISL - ACK, slave information
+ ATRU - ACK, trusted host
+ AUTR - ACK, untrusted host
+ ECHK - NAK, checksum bad with given signature
+ ENR  - NAK, no such record or slave
+ EP   - NAK, not a valid P job
+ ESIG - NAK, signature unknown
+ ESLP - NAK, slave sleeps
+ ESLV - NAK, no slave left
+ ESPC - NAK, no space left
+ EUTR - NAK, because untrusted
+ RES  - Result
+ AMOD - Message of the day reply
+
+Special packets:
+ CZIP - GZip compressed content
+ CLZM - XZ compressed content
