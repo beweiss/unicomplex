@@ -1,0 +1,29 @@
+Create a custom DBMS as
+
+a) MySQL and other server-based DBMS suck and
+b) SQLite sucks, too.
+
+To be more elaborate, we need a fast method to retrieve pairs of tuples of
+GMP numbers. This would mean to serialise the stuff in the program, save it
+to BLOBs in the DBMS, then retrieve it and deserialise it. With server-based
+DMBS, there is also the overhead of network communication.
+
+Note that this problem, i.e. to retrieve partial results to compute other
+results, is in the critical path of unicomplex.
+
+The idea is to define a database table, to represent a function, as a set of
+pairs. The first member of each pair will be the function input tuple, the
+second member is the output tuple. The database will solely be searched for
+matching input tuple. Therefore, the SHA-1 hash of the input tuple is also
+saved in each record. Discrete parts of the database can then be organised
+in a binary search tree and efficiently be pre-filtered for a search query.
+
+Also, each record needs a sender signature and a timestamp on it to later be
+able to automatically remove results from known-bad hosts. The timestamp is
+there because it is suspected that the badness of a trusted host comes from
+a bug in unicomplex which was present until a certain point in time.
+
+The slave configuration file shall contain a buffer_limit variable which
+sets the maximum size of the slave's local DB in MiB to buffer results
+before sending them to the master. This is useful if the master is sleeping
+to not exhaust the disk space of the slave.

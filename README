@@ -1,18 +1,47 @@
 Unicomplex
 ----------
 
-Yet to come.
+Unicomplex is  a bunch of servers  (and two sample clients)  which implement
+the  Unicomplex  Protocol.  This,  in  turn, specifies  a  way  to  securely
+coordinate calculations of some hosts in an untrusted (open) network.
+
+The  idea is  to let  clients communicate  jobs to  a Unicomplex  collective
+represented by  the `master' which then  mediates these jobs to  the backing
+`slave' computers  and and saves  results to a  database so that  slaves can
+access every result that was ever computed by the collective in their future
+jobs.
+
+Clearly, the  name is  taken from  Star Trek. However,  there is  a pleasant
+ambiguity  because our  private  goal of  this project  is  to connect  some
+computers across the university campus to calculate together.
 
 Roadmap
 -------
 
-client/ - Sample clients source code.
-depot/  - The depot routines are called by the master internally to provide
-          it a means to organise, retrieve and request results. It is also
-	  used by slaves for storage-
-master/ - The master is the hub between slaves and clients; it accepts jobs
-          and mediates results-
-p-lang/ - The pseudo-language P used to formalise jobs and its assembler/
-          disasembler-
-proto/  - Any network- and protocol-related code.
-slave/  - Slave source code.
+ - client/:
+Sample clients source code.
+
+ - depot/:
+The depot routines are called by the master internally to provide it a means
+to organise,  retrieve and request  results. It is  also used by  slaves for
+storage. It is  also possible to use  the depot routines in a  server on low
+disk storage setups.
+
+ - master/:
+The  master is  the hub  between  slaves and  clients; it  accepts jobs  and
+mediates results.
+
+ - p-lang/:
+The  (pseudo)  programming  language  P  used  to  formalise  jobs  and  its
+assembler.
+
+ - proto/:
+Any network- and protocol-related code.
+
+ - slave/:
+Slave source code.
+
+Dependencies
+------------
+
+We currently depend on openssl, gzip, xz and gmp. Don't worry.
