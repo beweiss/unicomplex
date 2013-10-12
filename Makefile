@@ -19,12 +19,12 @@ MBUILD			 = $(TREE)/Makefile.build
 
 export CC CCLD AS MERGE LD RM STRIP CFLAGS CPPFLAGS LDFLAGS TREE MBUILD
 
-desc_targets		 = client/ depot/ master/ p-lang/ proto/ slave/
+desc_targets		 = client/ depot/ lib/ master/ p-lang/ proto/ slave/
 targets			+= $(desc_targets)
 clean_targets		+= $(desc_targets)
 
 include $(MBUILD)/Makefile.build
 
-aesthetic_targets += Documentation/ p-lang/ proto/
+aesthetic_targets += README Documentation/ p-lang/ proto/
 
 include $(TREE)/Makefile.aesthetic
