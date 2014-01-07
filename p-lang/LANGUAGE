@@ -1,0 +1,60 @@
+It is  to be  laid stress on  the fact  that every native  data type  can be
+converted to any other native data type - probably with loss of information.
+
+A principal duty of  the P language design is to ensure  that the slaves may
+not be abused by clients, i.e. slaves  do something through a P program that
+is not intended by P (executing arbitrary code, e.g.).
+
+So, simple things  like buffer/array overrun should be checked  to prevent a
+malicious program to do heap overflows, etc.. There will be no buffers,
+pointers, etc., available to the programmer.
+
+
+
+RENAME to  s-lang (funny because it's  "slang") and because one  of its main
+principles is  to be run as  a "slave language", controlled  from a possibly
+malicious person  from outside  but with  no possibility  to harm  the slave
+computer or its owner.
+
+Add the __local keyword. Functions declared  as such as are *not* subject to
+value recording. By default, whenever a  function is executed, its input and
+output  tuple are  recorded to  the database.  __local can  also be  used to
+include  a private  algorithm  for  a known  function  (and ignore  possible
+database entries).
+
+Add __attribute() keyword like in GCC  but more generic. You can associate
+any attribute  and write a compiler  front-end to examine attributes  of any
+given  object. These  are only  valid (all  the other  __* keywords)  in the
+declaration of an object.
+
+Have a cpp-like macro processor with regex support.
+
+[*] The name "P" was originally meant to express "pseudo" because I planned
+the language  to only support  mathematical expressions, i.e.  no functions,
+not even control structures, only  variables, labels and goto. However, this
+has  changed  since  then.  I  would rename  the  language  accordingly  (to
+something as  sweet as  "slave language", abbreviated  "slang") if  I didn't
+like the letter "P" so much.
+
+Maybe rename the "provides" keyword. It's generally not good to have keyword
+in simple present 3rd person. "provides" should move to "export" or
+something and __local should then read "local" to be consistent. Or:
+"provide" means: visible to other clients (global symbol table - P has
+"dynamic scoping" if this term exists) and captured into the database;
+"extern" means: visible to other clients but not captures; "local" means:
+only visible to this source file and not captured.
+
+Exporting functions such as min() or max() is considered spamming our hard
+disks (and spamming our hard disks is bad, mkay).
+
+Add a `complex' type, structures and nested tuples in later versions. Maybe
+we can even have a `string' type later :-) Also #include isn't needed in P
+currently as function scopes, etc., are global to the entire network and the
+user may only send one file at a time. But it may be needed later when users
+have complex enough programs (so they always send them preprocessed into one
+file to the collective).
+
+All functions need to be overloadable.
+
+Dynamically loadable frontend (semantic analysis of e.g. __attribute() tags)
+and backend (code optimisation) plugins.

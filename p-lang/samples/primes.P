@@ -25,7 +25,7 @@
  */
 
 /*
- * NOTE: The parser will become problems because parentheses are used for:
+ * NOTE: The parser will get problems because parentheses are used for:
  *        * precedence elevation in mathematical/logical expressions;
  *        * function calls/operator appendage;
  *        * tuple definition.
@@ -45,8 +45,8 @@
  *       that case, (1) is taken as a tuple notation.) To force (1) to be
  *       recognised as a tuple, use a cast: ((tuple) (1)).
  *
- *       Also, anonymous tuples are to be treated differently if their on
- *       the RHS of an assignment:
+ *       Also, anonymous tuples are to be treated differently if they're on
+ *       the LHS of an assignment:
  *
  *       (p, q) = (1, 2)
  *
@@ -64,15 +64,18 @@
  *
  *       (1, 2) = (3, 4)
  *
- *       is invalid. An anonymous tuple on the RHS of an assignment must
+ *       is invalid. An anonymous tuple on the LHS of an assignment must
  *       only contain variables.
  */
 
 provides __async p : (int n) -> (int p) {
 	int c = 1, r = 2, m;
 
-	/* TODO */
-	report (c, r);
+	/* TODO: How to denote matrices? The report keyword will tell the
+	 *       calling database that (c) is the input tuple that produced
+	 *       the output tuple (r). This can only be done using matrices
+	 *       as tuples cannot contain tuples. */
+	report [(c), (r)];
 }
 
 /*

@@ -4,6 +4,8 @@
  *	(C) 2013 Tobias Boege <tobias@gambas-buch.de>
  */
 
+#include <stdlib.h>
+
 #include <uc/read_config.h>
 
 int main(void)

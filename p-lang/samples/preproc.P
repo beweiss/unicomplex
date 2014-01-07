@@ -1,0 +1,37 @@
+/*
+ *	unicomplex/p-lang/samples/preproc.P - Preprocessor test
+ *
+ *	(C) 2013 Tobias Boege <tobias@gambas-buch.de>
+ */
+
+#define A 1\
+22\
+3\
+\
+\
+6
+
+A
+
+#ifdef A
+# define B 23
+#else
+# define C 23
+#endif
+
+B : C
+
+#ifndef B /* Then B would not be defined... */
+"B" not defined
+#endif
+
+#subst __(.*) Masked_\1
+
+void testfunc() {
+	if (cond)
+		testfunc();       
+}
+
+__nonzero __needslocking
+
+End.\

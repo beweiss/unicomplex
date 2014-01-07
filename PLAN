@@ -1,0 +1,8 @@
+Implement everything as libraries so standalone applications can be written
+for testing (this was also my intention from the beginning since the
+compiler must somehow be part of the slaves).
+
+The logical order of things would then be:
+ 1. complete the P language (with standalone compiler),
+ 2. complete the DBMS (library),
+ 3. complete the PROTOCOL and then master, slave and clients.

@@ -12,6 +12,8 @@
 # error "Yuck! This is not GCC. Use a decent compiler."
 #endif
 
+#include <stddef.h> /* get offsetof() */
+
 /*
  * The usual stuff
  */
@@ -27,5 +29,10 @@
 #define __align(size)   __attribute__((aligned(size)))
 #define __max_align     __align(__BIGGEST_ALIGNMENT__)
 #define __printflike(f) __attribute__((format(printf, f, f + 1)))
+
+/* Taken from the Linux kernel, what a lovely piece! */
+#define container_of(ptr, type, member) ({			\
+	const typeof(((type *) 0)->member) *__mptr = (ptr);	\
+	(type *) ((char *) __mptr - offsetof(type,member));})
 
 #endif /* COMPILER_H */

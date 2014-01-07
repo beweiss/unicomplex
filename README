@@ -7,13 +7,16 @@ coordinate calculations of some hosts in an untrusted (open) network.
 
 The  idea is  to let  clients communicate  jobs to  a Unicomplex  collective
 represented by  the `master' which then  mediates these jobs to  the backing
-`slave' computers  and and saves  results to a  database so that  slaves can
-access every result that was ever computed by the collective in their future
-jobs.
+`slave' computers and saves results to  a database so that slaves can access
+every result that was ever computed by the collective in their future jobs.
 
 Clearly, the  name is  taken from  Star Trek. However,  there is  a pleasant
 ambiguity  because our  private  goal of  this project  is  to connect  some
 computers across the university campus to calculate together.
+
+It would also be really cool - though there are no plans for this feature at
+present - if multiple slaves and/or the client could compute on the same job
+together. We will likely have a look at MPI for this...
 
 Roadmap
 -------
@@ -32,8 +35,8 @@ The  master is  the hub  between  slaves and  clients; it  accepts jobs  and
 mediates results.
 
  - p-lang/:
-The  (pseudo)  programming  language  P  used  to  formalise  jobs  and  its
-assembler.
+The   programming   language   P   used    to   formalise   jobs   and   its
+compiler/assembler.
 
  - proto/:
 Any network- and protocol-related code.
@@ -44,4 +47,7 @@ Slave source code.
 Dependencies
 ------------
 
-We currently depend on openssl, gzip, xz and gmp. Don't worry.
+We currently depend on openssl, gzip, xz and gmp. Don't worry. (Actually, we
+may build a custom inline-able multiple precision library for P to not rely
+on gmp for the obvious three reasons: inline-ability, not to depend upon a
+library, inline-ability.)

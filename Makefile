@@ -8,7 +8,7 @@ MERGE			 = ld -r
 LD			 = ld
 
 RM			 = rm -f
-STRIP			 = strip
+STRIP			 = \#strip
 
 CFLAGS			+= -Wall -ggdb
 CPPFLAGS		+= -I$(TREE)/include

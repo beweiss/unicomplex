@@ -12,6 +12,17 @@
 #include <uc/tuple.h>
 
 /*
+ * XXX: Should tuples be really created like this? There should at least be
+ *      an alternative to only allocate the shell of a tuple and then add
+ *      elements with their type dynamically. Not difficult to implement on
+ *      top of the structure as-is.
+ *
+ *      This is mainly an issue because we need a consistent and comfortable
+ *      way for P to define tuples and later matrices... The thing with
+ *      matrices is even more difficult as they're allowed to be n-dimensional.
+ */
+
+/*
  * new_tuple() - Create a new tuple for a number of elements
  * @n  : number of elements
  * @...: P_TYPE_* to specify the data type of each element

@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <uc/read_config.h>
 
@@ -49,6 +50,7 @@ struct read_config *read_config(const char *path)
 	struct read_config *config;
 	char *line = NULL;
 	size_t size = 0;
+	struct config_atom *atom;
 
 	if (!fp)
 		return NULL;
@@ -58,7 +60,6 @@ struct read_config *read_config(const char *path)
 
 	while (getline(&line, &size, fp) != -1) {
 		char *s = line, *name, c;
-		struct config_atom *atom;
 
 		/* Get the name */
 		skip_space(s);
