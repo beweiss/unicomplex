@@ -3,6 +3,7 @@
  *	                                    in-source documentation
  *
  *	(C) 2013 Tobias Boege <tobias@gambas-buch.de>
+ *	    2014 Benedikt Weisz <bjkw1001@gmail.com>
  */
 
 #include <stdio.h>
